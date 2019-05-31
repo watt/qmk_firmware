@@ -8,6 +8,7 @@ enum ctrl_keycodes {
     DBG_KBD,               //DEBUG Toggle Keyboard Prints
     DBG_MOU,               //DEBUG Toggle Mouse Prints
     MD_BOOT,               //Restart into bootloader after hold timeout
+    RGB_RST,               // Reset RGB matrix config
 };
 
 #define TG_NKRO MAGIC_TOGGLE_NKRO //Toggle 6KRO / NKRO mode
@@ -25,7 +26,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
     [1] = LAYOUT(
         _______, _______, _______, _______, _______, _______, _______, KC_F7,   KC_F8,   KC_F9,   KC_F10,  KC_F11,      KC_F12,             KC_F13,  KC_F14,  KC_F15, \
-        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,     _______, _______,   _______, _______, _______, \
+        _______, RGB_RST, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,     _______, _______,   _______, _______, _______, \
         _______, RGB_SPD, RGB_VAI, RGB_SPI, RGB_HUI, RGB_SAI, _______, U_T_AUTO,U_T_AGCR,_______, _______, _______,     _______, _______,   _______, _______, _______, \
         _______, RGB_RMOD,RGB_VAD, RGB_MOD, RGB_HUD, RGB_SAD, _______, _______, _______, _______, _______, _______,     _______, \
         _______, RGB_TOG, _______, _______, _______, MD_BOOT, TG_NKRO, _______, _______, _______, _______, _______,                                  _______, \
@@ -43,10 +44,22 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     */
 };
 
+void rgb_reset(void) {
+    rgb_matrix_sethsv(46, 255, 192);
+    rgb_matrix_mode(RGB_MATRIX_SOLID_COLOR);
+};
+
+void rgb_matrix_nudge_hue(uint8_t nudge) {
+    rgb_matrix_sethsv(
+        rgb_matrix_config.hue + nudge,
+        rgb_matrix_config.sat,
+        rgb_matrix_config.val
+    );
+}
+
 // Runs just one time when the keyboard initializes.
 void matrix_init_user(void) {
-    rgb_matrix_sethsv(168, 192, 255);
-    rgb_matrix_mode(RGB_MATRIX_SOLID_COLOR);
+    rgb_reset();
 };
 
 // Runs constantly in the background, in a loop.
@@ -124,6 +137,23 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                   }
                   break;
               }
+            }
+            return false;
+        case RGB_HUI:
+            if (record->event.pressed && MODS_SHIFT) {
+                rgb_matrix_nudge_hue(1);
+                return false;
+            }
+            return true;
+        case RGB_HUD:
+            if (record->event.pressed && MODS_SHIFT) {
+                rgb_matrix_nudge_hue(-1);
+                return false;
+            }
+            return true;
+        case RGB_RST:
+            if (record->event.pressed) {
+                rgb_reset();
             }
             return false;
         default:
